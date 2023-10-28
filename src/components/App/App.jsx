@@ -25,6 +25,7 @@ export const App = () => {
       setPrevPage(page);
     }
   }, [inputValue, page, prevInputValue, prevPage]);
+
   //=============================API===========================================================
   const updateGallery = async (inputValue, page) => {
     try {
@@ -42,6 +43,7 @@ export const App = () => {
       setLoading(false);
     }
   };
+
   //==========================================================================================
   const showMessage = (totalHits, firstRender) => {
     if (firstRender) {
@@ -50,6 +52,7 @@ export const App = () => {
     if (totalHits > 0) {
       toast.success(`hooray, we found ${totalHits} pictures`);
     } else {
+      setError(error);
       toast.error(`sorry, something went wrong...`);
     }
   };
