@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import css from './App.module.css';
 import { fetchGalerryItems } from '../../servises/axiosAPI';
 import SearchBar from '../SearchBar/SearchBar';
@@ -18,44 +18,48 @@ export const App = () => {
   const [prevInputValue, setPrevInputValue] = useState('');
   const [prevPage, setPrevPage] = useState(0);
 
+  const showMessage = useCallback(
+    (totalHits, firstRender) => {
+      if (firstRender) {
+        return;
+      }
+      if (totalHits > 0) {
+        toast.success(`hooray, we found ${totalHits} pictures`);
+      } else {
+        setError(error);
+        toast.error(`sorry, something went wrong...`);
+      }
+    },
+    [error]
+  );
+  //=============================API===========================================================
+  const updateGallery = useCallback(
+    async (inputValue, page) => {
+      try {
+        setLoading(true);
+        const { hits, totalHits } = await fetchGalerryItems(inputValue, page);
+        showMessage(totalHits, prevInputValue === inputValue);
+        if (hits.length > 0) {
+          setImages(prev => [...prev, ...hits]);
+          settotalHits(totalHits);
+        }
+      } catch (error) {
+        setError(error.message);
+        toast.error(error.message);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [prevInputValue, showMessage]
+  );
+  //==========================================================================================
   useEffect(() => {
     if (prevPage !== page || prevInputValue !== inputValue) {
       updateGallery(inputValue, page);
       setPrevInputValue(inputValue);
       setPrevPage(page);
     }
-  }, [inputValue, page, prevInputValue, prevPage]);
-
-  //=============================API===========================================================
-  const updateGallery = async (inputValue, page) => {
-    try {
-      setLoading(true);
-      const { hits, totalHits } = await fetchGalerryItems(inputValue, page);
-      showMessage(totalHits, prevInputValue === inputValue);
-      if (hits.length > 0) {
-        setImages(prev => [...prev, ...hits]);
-        settotalHits(totalHits);
-      }
-    } catch (error) {
-      setError(error.message);
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  //==========================================================================================
-  const showMessage = (totalHits, firstRender) => {
-    if (firstRender) {
-      return;
-    }
-    if (totalHits > 0) {
-      toast.success(`hooray, we found ${totalHits} pictures`);
-    } else {
-      setError(error);
-      toast.error(`sorry, something went wrong...`);
-    }
-  };
+  }, [inputValue, page, prevInputValue, prevPage, updateGallery]);
 
   const handleChangeSubmit = query => {
     if (query === inputValue) {
@@ -82,19 +86,3 @@ export const App = () => {
     </div>
   );
 };
-
-// async componentDidUpdate(_, prevState) {
-//   const { inputValue, page } = this.state;
-
-//   if (prevState.page !== page || prevState.inputValue !== inputValue) {
-//     this.setState({ loading: true });
-//     this.getDataGallery({ inputValue, page });
-//     setTimeout(() => {
-//       if (!this.state.images.length || page > 1) {
-//         return;
-//       } else {
-//         toast.success(`hooray, we found ${this.state.totalHits} pictures`);
-//       }
-//     }, 500);
-//   }
-// }
