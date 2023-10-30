@@ -26,12 +26,11 @@ export const App = () => {
         if (!inputValue) {
           return;
         }
-        if (totalHits > 0) {
+        if (totalHits > 0 && page === 1) {
           toast.success(`hooray, we found ${totalHits} pictures`);
-          return;
-        } else {
+        }
+        if (totalHits === 0) {
           dispatch({ type: 'setError', payload: error });
-
           toast.error(`sorry, something went wrong...`);
         }
       } catch (error) {
