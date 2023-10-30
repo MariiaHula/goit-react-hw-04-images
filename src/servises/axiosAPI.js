@@ -11,8 +11,8 @@ export const fetchGalerryItems = async (query, page) => {
       orientation: 'horizontal',
       per_page: 12,
       image_type: 'photo',
-      page: `${page}`,
-      q: `${query}`,
+      page: page,
+      q: query,
     },
   });
   return data;
