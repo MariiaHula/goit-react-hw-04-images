@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useCallback, useReducer } from 'react';
 import css from './App.module.css';
 import { fetchGalerryItems } from '../../servises/axiosAPI';
 import SearchBar from '../SearchBar/SearchBar';
@@ -7,72 +7,58 @@ import Button from '../Button/Button';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Loader from 'components/Loader/Loader';
+import { initialState, imagesReducer } from 'imagesReduser/reduser';
 
 export const App = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [images, setImages] = useState([]);
-  const [inputValue, setInputValue] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalHits, settotalHits] = useState(0);
-  const [prevInputValue, setPrevInputValue] = useState('');
-  const [prevPage, setPrevPage] = useState(0);
+  const [state, dispatch] = useReducer(imagesReducer, initialState);
+  const { loading, error, images, inputValue, page, totalHits } = state;
 
-  const showMessage = useCallback(
-    (totalHits, firstRender) => {
-      if (firstRender) {
-        return;
-      }
-      if (totalHits > 0) {
-        toast.success(`hooray, we found ${totalHits} pictures`);
-      } else {
-        setError(error);
-        toast.error(`sorry, something went wrong...`);
-      }
-    },
-    [error]
-  );
   //=============================API===========================================================
   const updateGallery = useCallback(
     async (inputValue, page) => {
       try {
-        setLoading(true);
+        dispatch({ type: 'loading', payload: true });
         const { hits, totalHits } = await fetchGalerryItems(inputValue, page);
-        showMessage(totalHits, prevInputValue === inputValue);
         if (hits.length > 0) {
-          setImages(prev => [...prev, ...hits]);
-          settotalHits(totalHits);
+          dispatch({ type: 'renderImages', payload: hits });
+          dispatch({ type: 'setTotalHits', payload: totalHits });
+        }
+        if (!inputValue) {
+          return;
+        }
+        if (totalHits > 0) {
+          toast.success(`hooray, we found ${totalHits} pictures`);
+          return;
+        } else {
+          dispatch({ type: 'setError', payload: error });
+
+          toast.error(`sorry, something went wrong...`);
         }
       } catch (error) {
-        setError(error.message);
+        dispatch({ type: 'setError', payload: error.message });
         toast.error(error.message);
       } finally {
-        setLoading(false);
+        dispatch({ type: 'loading', payload: false });
       }
     },
-    [prevInputValue, showMessage]
+    [error]
   );
   //==========================================================================================
+
   useEffect(() => {
-    if (prevPage !== page || prevInputValue !== inputValue) {
-      updateGallery(inputValue, page);
-      setPrevInputValue(inputValue);
-      setPrevPage(page);
-    }
-  }, [inputValue, page, prevInputValue, prevPage, updateGallery]);
+    updateGallery(inputValue, page);
+  }, [inputValue, page, updateGallery]);
 
   const handleChangeSubmit = query => {
     if (query === inputValue) {
       toast.info(`oops...duplicate search`);
       return;
     }
-    setInputValue(query);
-    setImages([]);
-    setPage(1);
+    dispatch({ type: 'setInputValue', payload: query });
   };
 
   const loadMore = () => {
-    setPage(prev => prev + 1);
+    dispatch({ type: 'loadMore' });
   };
 
   return (
